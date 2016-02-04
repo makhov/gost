@@ -59,7 +59,9 @@ func New(path string, o outputType) (*Stats, error) {
 		}
 	}
 	s.Data.TotalFiles = len(s.Data.Files)
-	s.Data.AvgLinesInFile = s.Data.TotalLines / s.Data.TotalFiles
+	if s.Data.TotalFiles > 0 {
+		s.Data.AvgLinesInFile = s.Data.TotalLines / s.Data.TotalFiles
+	}
 	if err := <-errc; err != nil {
 		return nil, err
 	}
