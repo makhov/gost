@@ -3,6 +3,8 @@ Gost
 
 Gost is a simple utility to get info about *.go files in package.
 
+![gost example](demo.png)
+
 Install
 =======
 
