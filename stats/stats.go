@@ -31,7 +31,7 @@ type statData struct {
 	TotalFiles     int        `json:"total_files"`
 	TotalLines     int        `json:"total_lines"`
 	AvgLinesInFile int        `json:"avg_lines"`
-	MaxLinesInFile int        `json:"max_lines"`
+	MaxLinesFile   FileInfo   `json:"max_lines_file"`
 	Files          []FileInfo `json:"files"`
 }
 
@@ -54,8 +54,8 @@ func New(path string, o outputType) (*Stats, error) {
 	for f := range fi {
 		s.Data.Files = append(s.Data.Files, f)
 		s.Data.TotalLines += f.Lines
-		if f.Lines > s.Data.MaxLinesInFile {
-			s.Data.MaxLinesInFile = f.Lines
+		if f.Lines > s.Data.MaxLinesFile.Lines {
+			s.Data.MaxLinesFile = f
 		}
 	}
 	s.Data.TotalFiles = len(s.Data.Files)
@@ -123,7 +123,7 @@ func (s *Stats) String() string {
 	summary := `Stats for %s:
 	Files: %s
 	Lines: %s
-	Max lines in file: %s
+	Max lines in file: %s (%s)
 	Average lines in file: %s
 	`
 
@@ -132,7 +132,8 @@ func (s *Stats) String() string {
 		yellow(s.Path),
 		yellow(s.Data.TotalFiles),
 		yellow(s.Data.TotalLines),
-		yellow(s.Data.MaxLinesInFile),
+		yellow(s.Data.MaxLinesFile.Lines),
+		yellow(s.Data.MaxLinesFile.Path),
 		yellow(s.Data.AvgLinesInFile),
 	)
 }
