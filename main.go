@@ -1,11 +1,11 @@
 package main
 
 import (
-	"github.com/makhov/gost/stats"
-	"path/filepath"
-	"fmt"
-	"log"
 	"flag"
+	"fmt"
+	"github.com/makhov/gost/stats"
+	"log"
+	"path/filepath"
 )
 
 func main() {
@@ -24,7 +24,6 @@ func main() {
 	if err != nil {
 		log.Fatal(err)
 	}
+
 	fmt.Println(s)
 }
-
-

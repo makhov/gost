@@ -1,17 +1,16 @@
 package stats
 
 import (
-	"io"
-	"os"
 	"bytes"
-	"sync"
-	"path/filepath"
-	"regexp"
-	"errors"
 	"encoding/json"
-	"log"
+	"errors"
 	"fmt"
 	"github.com/fatih/color"
+	"io"
+	"os"
+	"path/filepath"
+	"regexp"
+	"sync"
 )
 
 type outputType int
@@ -22,24 +21,24 @@ const (
 )
 
 type Stats struct {
-	wg     sync.WaitGroup
+	//wg     sync.WaitGroup
 	output outputType
 	Path   string
 	Data   statData
 }
 
 type statData struct {
-	TotalFiles     int `json:"total_files"`
-	TotalLines     int `json:"total_lines"`
-	AvgLinesInFile int `json:"avg_lines"`
-	MaxLinesInFile int `json:"max_lines"`
+	TotalFiles     int        `json:"total_files"`
+	TotalLines     int        `json:"total_lines"`
+	AvgLinesInFile int        `json:"avg_lines"`
+	MaxLinesInFile int        `json:"max_lines"`
 	Files          []FileInfo `json:"files"`
 }
 
 type FileInfo struct {
 	Name  string `json:"name"`
 	Path  string `json:"path"`
-	Lines int `json:"lines"`
+	Lines int    `json:"lines"`
 }
 
 func New(path string, o outputType) (*Stats, error) {
@@ -47,15 +46,74 @@ func New(path string, o outputType) (*Stats, error) {
 		return nil, errors.New("Directory not found: " + path)
 	}
 	s := &Stats{output: o, Path: path}
-	filepath.Walk(path, s.visit)
-	s.wg.Wait()
+
+	done := make(chan struct{})
+	defer close(done)
+
+	fi, errc := sumFiles(done, path)
+	for f := range fi {
+		s.Data.Files = append(s.Data.Files, f)
+		s.Data.TotalLines += f.Lines
+		if f.Lines > s.Data.MaxLinesInFile {
+			s.Data.MaxLinesInFile = f.Lines
+		}
+	}
+	s.Data.TotalFiles = len(s.Data.Files)
 	s.Data.AvgLinesInFile = s.Data.TotalLines / s.Data.TotalFiles
+	if err := <-errc; err != nil {
+		return nil, err
+	}
 
 	return s, nil
 }
 
+func sumFiles(done <-chan struct{}, root string) (<-chan FileInfo, <-chan error) {
+	c := make(chan FileInfo)
+	errc := make(chan error, 1)
+	re := regexp.MustCompile(`.+\/\w+\.go$`)
+	go func() {
+		var wg sync.WaitGroup
+		err := filepath.Walk(root, func(path string, info os.FileInfo, err error) error {
+			if re.MatchString(path) && !info.IsDir() {
+				if err != nil {
+					return err
+				}
+				if !info.Mode().IsRegular() {
+					return nil
+				}
+				wg.Add(1)
+				go func() {
+					f := FileInfo{Name: filepath.Base(path), Path: path}
+					f.Lines, err = f.getLinesCount()
+					select {
+					case c <- f:
+					case <-done:
+					}
+					wg.Done()
+				}()
+
+				select {
+				case <-done:
+					return errors.New("walk canceled")
+				default:
+					return nil
+				}
+			}
+			return nil
+		})
+
+		go func() {
+			wg.Wait()
+			close(c)
+		}()
+
+		errc <- err
+	}()
+	return c, errc
+}
+
 func (s *Stats) String() string {
-	if (s.output == OutputJson) {
+	if s.output == OutputJson {
 		b, _ := json.Marshal(s.Data)
 		return string(b)
 	}
@@ -75,32 +133,6 @@ func (s *Stats) String() string {
 		yellow(s.Data.MaxLinesInFile),
 		yellow(s.Data.AvgLinesInFile),
 	)
-}
-
-func (s *Stats) visit(path string, fi os.FileInfo, err error) error {
-	re := regexp.MustCompile(`.+\/\w+\.go$`)
-	if re.MatchString(path) {
-		s.wg.Add(1)
-		go func() {
-			defer s.wg.Done()
-			if !fi.IsDir() {
-				f := FileInfo{Name: filepath.Base(path), Path: path}
-				f.Lines, err = f.getLinesCount()
-				if err != nil {
-					log.Fatal(err)
-				}
-				s.Data.Files = append(s.Data.Files, f)
-				s.Data.TotalFiles += 1
-				s.Data.TotalLines += f.Lines
-				if f.Lines > s.Data.MaxLinesInFile {
-					s.Data.MaxLinesInFile = f.Lines
-				}
-
-			}
-		}()
-	}
-
-	return nil
 }
 
 func (fi *FileInfo) getLinesCount() (int, error) {
