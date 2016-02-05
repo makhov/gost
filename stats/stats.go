@@ -116,10 +116,17 @@ func sumFiles(done <-chan struct{}, root string) (<-chan FileInfo, <-chan error)
 
 func (s *Stats) String() string {
 	if s.output == OutputJson {
-		b, _ := json.Marshal(s.Data)
-		return string(b)
+		return s.Json()
 	}
+	return s.PrettyString()
+}
 
+func (s *Stats) Json() string {
+	b, _ := json.Marshal(s.Data)
+	return string(b)
+}
+
+func (s *Stats) PrettyString() string {
 	summary := `Stats for %s:
 	Files: %s
 	Lines: %s
