@@ -10,7 +10,7 @@ import (
 
 func main() {
 	path := flag.String("path", ".", "Path")
-	outputFlag := flag.String("output", "pretty", "Output format")
+	outputFlag := flag.String("output", stats.OutputPretty, "Output format")
 	flag.Parse()
 
 	dir, _ := filepath.Abs(*path)
