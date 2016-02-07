@@ -6,28 +6,22 @@ import (
 	"github.com/fatih/color"
 )
 
-type outputType int
-
 const (
-	OutputPretty outputType = iota
-	OutputJson
+	OutputPretty = "pretty"
+	OutputJson = "json"
 )
 
 type Output struct {
-	format outputType
+	format string
 	stats  *Stats
 }
 
 func (s *Stats) NewOutput(format string) *Output {
-	f := OutputPretty
-	if (format == "json") {
-		f = OutputJson
-	}
-	return &Output{format: f, stats: s}
+	return &Output{format: format, stats: s}
 }
 
 func (s *Stats) String() string {
-	o := s.NewOutput("pretty")
+	o := s.NewOutput(OutputPretty)
 	return o.String()
 }
 

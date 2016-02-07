@@ -27,6 +27,24 @@ gost --path=$GOPATH/src/github.com/golang/lint --output=json
 ```
 will prints json with info about files in path 
 
+Usage as library
+================
+```
+import (
+    "fmt"
+    "github.com/makhov/gost/stats"
+)
+
+func main() {
+    s := stats.New("$GOPATH/src/")
+    fmt.Println(s.Data.TotalFiles)
+    
+    o := s.NewOutput(stats.OutputJson)
+    fmt.Println(o)
+}
+```
+
+
 Build from source
 ==================
 
