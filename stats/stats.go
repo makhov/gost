@@ -10,16 +10,7 @@ import (
 	"sync"
 )
 
-type outputType int
-
-const (
-	OutputPretty outputType = iota
-	OutputJson
-)
-
 type Stats struct {
-	//wg     sync.WaitGroup
-	output outputType
 	Path   string
 	Data   statData
 }
@@ -38,11 +29,11 @@ type FileInfo struct {
 	Lines int    `json:"lines"`
 }
 
-func New(path string, o outputType) (*Stats, error) {
+func New(path string) (*Stats, error) {
 	if !CheckFileExist(path) {
 		return nil, errors.New("Directory not found: " + path)
 	}
-	s := &Stats{output: o, Path: path}
+	s := &Stats{Path: path}
 
 	done := make(chan struct{})
 	defer close(done)

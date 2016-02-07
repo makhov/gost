@@ -15,15 +15,11 @@ func main() {
 
 	dir, _ := filepath.Abs(*path)
 
-	o := stats.OutputPretty
-	if *outputFlag == "json" {
-		o = stats.OutputJson
-	}
-
-	s, err := stats.New(dir, o)
+	s, err := stats.New(dir)
 	if err != nil {
 		log.Fatal(err)
 	}
 
-	fmt.Println(s)
+	o := s.NewOutput(*outputFlag)
+	fmt.Println(o)
 }

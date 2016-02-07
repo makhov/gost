@@ -6,19 +6,44 @@ import (
 	"github.com/fatih/color"
 )
 
-func (s *Stats) String() string {
-	if s.output == OutputJson {
-		return s.Json()
-	}
-	return s.PrettyString()
+type outputType int
+
+const (
+	OutputPretty outputType = iota
+	OutputJson
+)
+
+type Output struct {
+	format outputType
+	stats  *Stats
 }
 
-func (s *Stats) Json() string {
-	b, _ := json.Marshal(s.Data)
+func (s *Stats) NewOutput(format string) *Output {
+	f := OutputPretty
+	if (format == "json") {
+		f = OutputJson
+	}
+	return &Output{format: f, stats: s}
+}
+
+func (s *Stats) String() string {
+	o := s.NewOutput("pretty")
+	return o.String()
+}
+
+func (o *Output) Json() string {
+	b, _ := json.Marshal(o.stats.Data)
 	return string(b)
 }
 
-func (s *Stats) PrettyString() string {
+func (o *Output) String() string {
+	if (o.format == OutputJson) {
+		return o.Json()
+	}
+	return o.PrettyString()
+}
+
+func (o *Output) PrettyString() string {
 	summary := `Stats for %s:
 	Files: %s
 	Lines: %s
@@ -28,11 +53,11 @@ func (s *Stats) PrettyString() string {
 
 	yellow := color.New(color.FgYellow).SprintFunc()
 	return fmt.Sprintf(summary,
-		yellow(s.Path),
-		yellow(s.Data.TotalFiles),
-		yellow(s.Data.TotalLines),
-		yellow(s.Data.MaxLinesFile.Lines),
-		yellow(s.Data.MaxLinesFile.Path),
-		yellow(s.Data.AvgLinesInFile),
+		yellow(o.stats.Path),
+		yellow(o.stats.Data.TotalFiles),
+		yellow(o.stats.Data.TotalLines),
+		yellow(o.stats.Data.MaxLinesFile.Lines),
+		yellow(o.stats.Data.MaxLinesFile.Path),
+		yellow(o.stats.Data.AvgLinesInFile),
 	)
 }
